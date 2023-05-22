@@ -43,13 +43,15 @@ logging.config.dictConfig({
 })
 
 
-NIKE_HOME_URL = "https://www.nike.com/login"
+# NIKE_HOME_URL = "https://www.nike.com/login"
+NIKE_HOME_URL = "https://www.nike.com/in/member/profile/login?continueUrl=https://www.nike.com/in/launch"
 SUBMIT_BUTTON_XPATH = "/html/body/div[2]/div/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/div/div/div[6]/button"
 LOGGER = logging.getLogger()
 
 def run(driver, shoe_type, username, password, url, shoe_size, shipping_option, login_time=None, release_time=None,
         shipping_address=None, page_load_timeout=None, screenshot_path=None, html_path=None, select_payment=False, purchase=False,
         num_retries=None, dont_quit=False, cvv=None):
+    LOGGER.info("SNKR BOT: On execution state...")
     driver.maximize_window()
     driver.set_page_load_timeout(page_load_timeout)
 
@@ -219,19 +221,23 @@ def login(driver, username, password):
         LOGGER.info("Page load timed out but continuing anyway")
 
     LOGGER.info("Waiting for login fields to become visible")
-    wait_until_visible(driver=driver, xpath="//input[@name='emailAddress']")
+    wait_until_visible(driver=driver, name="emailAddress")
 
-    LOGGER.info("Entering username and password")
-    email_input = driver.find_element_by_xpath("//input[@name='emailAddress']")
+    LOGGER.info("Entering username...")
+    email_input = driver.find_element(By.NAME, "emailAddress")
+    # email_input = driver.find_element_by_xpath('//*[@id="6de034e6-6b5b-48fb-a351-ebdd3ca151eb"]')
     email_input.clear()
     email_input.send_keys(username)
     
-    password_input = driver.find_element_by_xpath("//input[@name='password']")
+    LOGGER.info("Entering password...")
+    password_input = driver.find_element_by_xpath('//*[@id="6a67090e-f815-4964-843a-844f181bf37a"]')
     password_input.clear()
     password_input.send_keys(password)
 
     LOGGER.info("Logging in")
-    driver.find_element_by_xpath("//input[@value='SIGN IN']").click()
+    driver.find_element_by_xpath('//*[@id="81b2b1ca-1f1c-4ebc-9305-44ac30f57a1a"]').click()
+    
+    LOGGER.info("Login details updated in form...")
     
     wait_until_visible(driver=driver, xpath="//a[@data-path='myAccount:greeting']", duration=5)
     
@@ -247,7 +253,7 @@ def retry_login(driver, username, password):
             wait_until_visible(driver=driver, xpath=xpath, duration=5)
             driver.find_element_by_xpath(xpath).click()
         
-            password_input = driver.find_element_by_xpath("//input[@name='password']")
+            password_input = driver.find_element_by_xpath('//*[@id="6a67090e-f815-4964-843a-844f181bf37a"]')
             password_input.clear()
             password_input.send_keys(password)
 
@@ -584,9 +590,9 @@ def wait_until_clickable(driver, xpath=None, class_name=None, el_id=None, durati
         WebDriverWait(driver, duration, frequency).until(EC.element_to_be_clickable((By.ID, el_id)))
 
 
-def wait_until_visible(driver, xpath=None, class_name=None, el_id=None, duration=10000, frequency=0.01):
-    if xpath:
-        WebDriverWait(driver, duration, frequency).until(EC.visibility_of_element_located((By.XPATH, xpath)))
+def wait_until_visible(driver, name=None, class_name=None, el_id=None, duration=10000, frequency=0.01):
+    if name:
+        WebDriverWait(driver, duration, frequency).until(EC.visibility_of_element_located((By.NAME, name)))
     elif class_name:
         WebDriverWait(driver, duration, frequency).until(EC.visibility_of_element_located((By.CLASS_NAME, class_name)))
     elif el_id:
@@ -611,7 +617,7 @@ if __name__ == "__main__":
     parser.add_argument("--release-time", default=None)
     parser.add_argument("--screenshot-path", default=None)
     parser.add_argument("--html-path", default=None)
-    parser.add_argument("--page-load-timeout", type=int, default=2)
+    parser.add_argument("--page-load-timeout", type=int, default=10)
     parser.add_argument("--driver-type", default="firefox", choices=("firefox", "chrome"))
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--select-payment", action="store_true")
@@ -657,6 +663,7 @@ if __name__ == "__main__":
         else:
             raise Exception("Drivers for installed operating system not found. Try specifying the path to the drivers with the --webdriver-path option")
         driver = webdriver.Chrome(executable_path=executable_path, chrome_options=options)
+        LOGGER.info("Linux Chrome: Selenium webdriver loaded successfully...")
     else:
         raise Exception("Specified web browser not supported, only Firefox and Chrome are supported at this point")
 
